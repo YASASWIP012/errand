@@ -21,7 +21,7 @@ The benchmark has 40 tasks on 4 fictional sites: a power company, a clinic, a li
 
 Nineteen errands were repeated by the same user with memory on. 17 passed, average time fell from 24.2 s to 18.8 s, and average cost fell from $0.0085 to $0.0045.
 
-The sites contain 556 unnamed controls across all 40 tasks, counted on each task's first page. The numbers above come from the final code, apart from later wording fixes to spoken prompts.
+The sites contain 556 unnamed controls across all 40 tasks, counted on each task's first page. The numbers above come from the code before three small later fixes: the amount and site name in spoken prompts, the model names in the trace, and stale remembered price labels.
 
 ## Limitations
 
