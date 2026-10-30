@@ -2,7 +2,7 @@ services:
   - type: web
     name: errand
     runtime: docker
-    plan: starter
+    plan: free
     healthCheckPath: /api/info
     envVars:
       - key: NEBIUS_API_KEY
