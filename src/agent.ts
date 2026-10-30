@@ -391,7 +391,8 @@ async function repair(
   const toAsk: Unnamed[] = [];
   for (const u of fresh) {
     const hit = known[memory.signature(u)];
-    if (hit) fromMemory.push({ id: u.id, ...hit });
+    // A remembered number goes stale: prices and totals must be read fresh.
+    if (hit && !(u.tag === "img" && /\d/.test(hit.label))) fromMemory.push({ id: u.id, ...hit });
     else toAsk.push(u);
   }
   let labels = [...fromMemory];
