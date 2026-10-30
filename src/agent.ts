@@ -8,7 +8,8 @@ import * as memory from "./memory.js";
 
 export type Mode = "errand" | "baseline";
 
-const YES = /^\s*(yes|yeah|yep|go ahead|do it|confirm|ok(ay)?|sure)\b/i;
+// The whole reply has to be a yes. "Okay, wait" is not one.
+const YES = /^\s*(yes|yeah|yep|go ahead|do it|confirm|ok(ay)?|sure)( please| go ahead| do it)?[\s.!]*$/i;
 
 export type AgentEvent =
   | { type: "plan"; steps: string[]; fromMemory: boolean }
@@ -199,7 +200,7 @@ export async function runErrand(opts: RunOptions, io: AgentIO): Promise<RunResul
       const look = crop ? await looksCommitting(crop, target.name, trace) : { commits: true, reads: "" };
       if (look.commits) secondLook = { id: action.id, reads: look.reads };
     }
-    const verdict = check(action, { controls, blockers, pageText: text, confirmed, site: origin, secondLook });
+    const verdict = check(action, { controls, blockers, pageText: text, confirmed, site: origin, siteName: await page.title(), secondLook });
     io.event({ type: "rule", decision: verdict.decision, prompt: "prompt" in verdict ? verdict.prompt : undefined });
     if (verdict.decision === "block") {
       history.push(`tried ${describe(action, target)} but ${verdict.reason}`);
@@ -264,7 +265,7 @@ async function verify(goal: string, history: string[], claim: string, text: stri
   try {
     return parseJson<{ met: boolean; reason: string }>(res.choices[0]?.message?.content);
   } catch {
-    return { met: true, reason: "" };
+    return { met: false, reason: "the check could not read the result, so look at the page again" };
   }
 }
 

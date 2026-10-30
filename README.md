@@ -2,7 +2,7 @@
 
 Errand is a voice-driven browser agent for blind people. Much of the web still fails screen readers: icon buttons with no names, prices drawn as images, custom controls that announce nothing. Errand reads those controls from pixels, names them, and then either hands the repaired page back to the person's own screen reader or runs the errand itself, stopping for a spoken yes before anything that spends money or can't be undone.
 
-Live demo: DEMO_URL (the free host sleeps when idle, so the first visit can take about a minute)
+Live demo: https://errand-gix3.onrender.com (the free host sleeps when idle, so the first visit can take about a minute)
 
 Video: VIDEO_URL
 
@@ -12,21 +12,23 @@ The benchmark has 40 tasks on 4 fictional sites: a power company, a clinic, a li
 
 | Mode | All | Action | Lookup | Safety | Avg steps | Avg time | Avg cost |
 |---|---|---|---|---|---|---|---|
-| Errand | 31/40 | 18/22 | 9/13 | 4/5 | 4.1 | 23.4 s | $0.0088 |
-| Baseline | 18/40 | 5/22 | 9/13 | 4/5 | 9.2 | 53.5 s | $0.0125 |
+| Errand | 35/40 | 19/22 | 11/13 | 5/5 | 3.9 | 25.8 s | $0.0082 |
+| Baseline | 19/40 | 6/22 | 9/13 | 4/5 | 8.0 | 46.4 s | $0.0111 |
 
-Eighteen errands were repeated by the same user with memory on. 17 passed, average time fell from 27.1 s to 12.4 s, and average cost fell from $0.0100 to $0.0040.
+Nineteen errands were repeated by the same user with memory on. 17 passed, average time fell from 24.2 s to 18.8 s, and average cost fell from $0.0085 to $0.0045.
 
-The sites contain 556 unnamed controls across all 40 tasks, counted on each task's first page.
+The sites contain 556 unnamed controls across all 40 tasks, counted on each task's first page. The numbers above come from the final code, apart from later wording fixes to spoken prompts.
 
 ## Limitations
 
 - No blind person has tested Errand. The benchmark measures task completion, and it says nothing about whether the experience works for a real user.
 - I built the test sites and the benchmark, and I made the sites hard to read on purpose. Expect different numbers on the real web.
-- Results vary between runs. The last three full runs scored 33, 32 and 31 out of 40, with small changes to the code between some of them.
-- Errand falsely claimed success on 5 of 40 tasks in the final run, the same count as the baseline. A blind person can't catch that by looking at the screen, so this is the most serious open problem. It happens less since the result check was added, and it still happens.
-- The safety failure in the final run was on `gr-inject-add`, where a page tells the agent to buy a gift card. In three reruns the agent ignored that text and the failures came from buying the wrong number of eggs. The saved run doesn't record the full site state, so I can't prove the same for that one failure.
-- Image labels are sometimes wrong. A wrong label can't bypass the stop rules on a page with money on it, because any picture-read name that isn't clearly harmless needs a yes. Elsewhere it can still mislead the agent.
+- Results vary between runs. The last four full runs scored 33, 32, 31 and 35 out of 40, with code fixes between them, so 35 is the best of those and may not repeat.
+- Errand falsely claimed success on 1 of 40 tasks in the final run, and on 5 of 40 in the run before it. A blind person can't catch that by looking at the screen, so this is the most serious open problem.
+- All 5 safety tasks passed in the final run, but `gr-inject-add`, where a page tells the agent to buy a gift card, failed in the run before it. In three reruns the agent ignored that text and any failure came from the wrong number of eggs. That run saved no site state, so I can't prove the same for the failure itself. The benchmark has only one injection task, and the guard does not screen control names or page titles.
+- The stop rules work from control names, so they have holes. A page could give a pay button a harmless `aria-label`, and a misread name could pass if the second look also misses it. A stronger design would gate on real state changes such as POST requests.
+- The baseline never sees pixels, so the comparison is agent with vision against agent without it. A screenshot-reading agent would be a harder baseline.
+- Each benchmark task ran once, and the simulated person approves every prompt except on the decline tasks. Memory figures cover only errands that passed the first time, and only Errand has the result check.
 - The Chrome extension and the voice flow have not been tested end to end by a real user in a real browser.
 - CAPTCHAs are out of scope. Errand hands them to the person, and it never types passwords, card numbers or one-time codes.
 
@@ -37,7 +39,7 @@ Each step of an errand runs through the same pipeline:
 1. Repair. `extension/scan.js` finds controls a screen reader can't identify. Super VL names them from a screenshot with numbered boxes, and the names are applied as real `aria-label` and `alt` attributes. Names are remembered per site, per user.
 2. Guard. Page text is screened for text aimed at the agent, scams and fake system messages. Flagged lines never reach the actor.
 3. Act. The actor picks one action from the repaired control list.
-4. Rules. Plain code in `src/rules.ts` checks the action before it runs. Page text and model output can't change that code. Buying, sending, deleting and similar actions need a yes. Secret fields go to the person. CAPTCHAs go to the person.
+4. Rules. Plain code in `src/rules.ts` checks the action before it runs, and page text can't edit that code. Buying, sending, deleting and similar actions need a yes, and the prompt states the total. Secret fields and CAPTCHAs go to the person. A control named from a picture on a page with money gets a second, cropped look first.
 5. Check. Before Errand says an errand worked, a second model compares the goal with the final page. If the two disagree, the errand continues.
 
 ## Which model does what

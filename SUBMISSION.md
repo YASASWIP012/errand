@@ -22,21 +22,21 @@ Much of the web fails screen readers. A checkout button might be an unnamed icon
 
 Errand runs on Nebius Token Factory with NVIDIA open models, and each model has one job. Ultra plans the errand and checks the result. Super VL reads pixels and picks each step. Lightning screens page text for instructions aimed at the agent and for scams. The app shows which model did what, with latency and cost.
 
-The stop rules are plain TypeScript that runs after the model decides and before the browser acts, so a web page can't talk its way past them. Memory is per user: site labels and successful routes are saved, so a repeat errand costs less.
+The stop rules are plain TypeScript that runs after the model decides and before the browser acts, so page text can't rewrite them. They do depend on control names, which is why any name read from a picture near money gets a second, cropped look. Memory is per user: site labels and successful routes are saved, so a repeat errand costs less.
 
 ### Results
 
-We built a benchmark of 40 tasks on 4 fictional sites, and a task only passes if the site's server state matches the goal. Errand passed 31 of 40. A baseline with the same models and safety rules but no page repair or memory passed 18 of 40. On tasks that change something, the scores were 18 of 22 and 5 of 22. With memory, repeat errands went from 27.1 s to 12.4 s and from $0.0100 to $0.0040 on average.
+We built a benchmark of 40 tasks on 4 fictional sites, and a task only passes if the site's server state matches the goal. Errand passed 35 of 40. A baseline with the same models and safety rules but no page repair or memory passed 19 of 40. On tasks that change something, the scores were 19 of 22 and 6 of 22. With memory, repeat errands went from 24.2 s to 18.8 s and from $0.0085 to $0.0045 on average. Scores moved between runs, and the last four were 33, 32, 31 and 35.
 
 ### Challenges
 
-The hardest bug was a safety one. The vision model misread a "Place order" button as "Your basket", so the stop rule saw a harmless name and let the click through. Now any name read from a picture on a page with money on it needs a yes, unless it's clearly harmless. Wrong labels still happen, and that rule limits what they can do.
+The hardest bug was a safety one. The vision model misread a "Place order" button as "Your basket", so the stop rule saw a harmless name and let the click through. Now a control named from a picture gets a second look on its own, cropped from the page, before any click near money. Wrong labels still happen, and this limits what they can do.
 
 Another bug had the agent reading the old screen after every click on single-page sites, because the usual load-state wait returns at once. Errand now waits for network requests to finish and the page to stop changing.
 
 ### What we learned and what's next
 
-No blind person has tested Errand yet, and that comes first. It also falsely claimed success on 5 of 40 tasks in the final run, and a person who can't see the screen has no way to catch that. The README lists every limitation we know of.
+No blind person has tested Errand yet, and that comes first. It also falsely claimed success on 1 of 40 tasks in the final run and 5 of 40 in the run before, and a person who can't see the screen has no way to catch that. The README lists every limitation we know of.
 
 ## Built with
 
@@ -46,7 +46,7 @@ TypeScript, Node.js, Fastify, Playwright, Nebius Token Factory, NVIDIA Nemotron,
 
 Repo: https://github.com/YASASWIP012/errand
 
-Demo: DEMO_URL
+Demo: https://errand-gix3.onrender.com
 
 Video: VIDEO_URL
 

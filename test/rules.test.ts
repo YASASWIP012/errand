@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, money, type RuleContext } from "../src/rules.js";
+import { amountAtStake, check, money, type RuleContext } from "../src/rules.js";
 
 function ctx(over: Partial<RuleContext> = {}): RuleContext {
   return {
@@ -28,6 +28,16 @@ describe("stop rules", () => {
     const controls = [{ id: "9", tag: "div", role: "button", name: "View basket", labelled: true }];
     const v = check({ kind: "click", id: "9" }, ctx({ controls, secondLook: { id: "9", reads: "Place order" } }));
     expect(v.decision).toBe("confirm");
+  });
+
+  it("treats a payments toggle as a commitment", () => {
+    const controls = [{ id: "9", tag: "div", role: "switch", name: "Automatic payments" }];
+    expect(check({ kind: "click", id: "9" }, ctx({ controls })).decision).toBe("confirm");
+  });
+
+  it("quotes the total, not the first price on the page", () => {
+    expect(amountAtStake("Bananas $1.90\nSourdough $4.50\nTotal $10.90")).toBe("$10.90");
+    expect(amountAtStake("Bananas $1.90\nOat milk $4.50")).toBe("$4.50");
   });
 
   it("does not trust a misread label on a page with money", () => {

@@ -28,7 +28,7 @@ export type Verdict =
   | { decision: "handoff"; reason: string; prompt: string }
   | { decision: "block"; reason: string };
 
-const COMMIT_WORDS = /\b(pay|payment|purchase|buy|order|checkout|check out|place order|donate|transfer|send|submit|confirm|book|reserve|delete|remove|cancel|unsubscribe|sign|agree|accept|authori[sz]e|withdraw|renew)\b/i;
+const COMMIT_WORDS = /\b(pay|payments?|autopay|purchase|buy|order|checkout|check out|place order|proceed|continue|donate|transfer|send|submit|confirm|book|reserve|delete|remove|cancel|unsubscribe|sign|agree|accept|authori[sz]e|withdraw|renew)\b/i;
 // Names a person can trust as harmless even if a picture was misread.
 const SAFE_LABEL = /^(view|open|go|show|next|previous|back|keep|increase|decrease|select|choose|search|home|outages|settings|usage|bills?|add .+ to (basket|cart))\b/i;
 const SECRET_FIELD = /\b(password|passcode|pin|otp|one[- ]time|verification code|cvv|cvc|security code|card number|card no|ssn|social security|aadhaar|pan number|account number|routing)\b/i;
@@ -38,12 +38,23 @@ export function money(text: string): string | undefined {
   return m?.[0];
 }
 
+// The amount a person is agreeing to: the total or amount due when the page
+// names one, otherwise the largest price on the page.
+export function amountAtStake(text: string): string | undefined {
+  const named = text.match(/\b(?:total|amount due|balance|you pay)\b[^\d$€£₹]{0,20}([$€£₹]\s?\d[\d,]*(?:\.\d{2})?)/i);
+  if (named) return named[1];
+  const all = text.match(/[$€£₹]\s?\d[\d,]*(?:\.\d{2})?/g) ?? [];
+  const value = (a: string) => Number(a.replace(/[^\d.]/g, ""));
+  return all.sort((a, b) => value(b) - value(a))[0] ?? money(text);
+}
+
 export interface RuleContext {
   controls: Control[];
   blockers: { captcha: boolean; password: boolean };
   pageText: string;
   confirmed: Set<string>;
   site: string;
+  siteName?: string;
   // What a cropped second look found, for a control named from a picture.
   secondLook?: { id: string; reads: string };
 }
@@ -74,7 +85,7 @@ export function check(action: Action, ctx: RuleContext): Verdict {
     }
     // A label read from pixels can be wrong, and a wrong name must not walk past
     // this check: on a page with money on it, only a clearly harmless name passes.
-    const amount = money(ctx.pageText);
+    const amount = amountAtStake(ctx.pageText);
     const looked = ctx.secondLook?.id === target.id;
     const unsure = looked || (!!target.labelled && !!amount && !SAFE_LABEL.test(target.name));
     if (action.kind === "click" && (COMMIT_WORDS.test(target.name) || unsure)) {
@@ -83,7 +94,7 @@ export function check(action: Action, ctx: RuleContext): Verdict {
       return {
         decision: "confirm",
         reason: key,
-        prompt: `I'm about to press "${target.name}" on ${ctx.site}.${looked && ctx.secondLook?.reads ? ` Up close it reads "${ctx.secondLook.reads}".` : unsure && !COMMIT_WORDS.test(target.name) ? " I read that name from a picture, so it may be wrong." : ""}${amount ? ` The page shows ${amount}.` : ""} Should I go ahead? Say yes or no.`,
+        prompt: `I'm about to press "${target.name}" on ${ctx.siteName || ctx.site}.${looked && ctx.secondLook?.reads ? ` Up close it reads "${ctx.secondLook.reads}".` : unsure && !COMMIT_WORDS.test(target.name) ? " I read that name from a picture, so it may be wrong." : ""}${amount ? ` The page shows ${amount}.` : ""} Should I go ahead? Say yes or no.`,
       };
     }
   }

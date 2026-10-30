@@ -22,11 +22,11 @@ Each step uses a different NVIDIA open model on Nebius Token Factory. Ultra make
 
 That matters here, because this page has a message telling the AI to buy a gift card without asking. Errand catches it and ignores it.
 
-Then there's the part I care about most. Before anything that spends money, Errand stops and asks. That check is plain code that runs after the model decides, so a web page can't talk its way around it. If you say no, nothing happens.
+Then there's the part I care about most. Before anything that spends money, Errand stops and asks. That check is plain code that runs after the model decides, and it tells you the amount first. If you say no, nothing is bought.
 
-We tested it on 40 tasks, and a task only passes if the website's own records say it happened. A baseline agent with the same models and safety rules, but no page repair, finished 18. Errand finished 31. On tasks that change something, that was 18 out of 22, against 5.
+We tested it on 40 tasks, and a task only passes if the website's own records say it happened. A baseline agent with the same models and safety rules, but no page repair, finished 19. Errand finished 35. On tasks that change something, that was 19 out of 22, against 6.
 
-It remembers too. Repeat an errand and it takes less than half the time and less than half the cost.
+It remembers too. Repeat an errand and it costs about half as much.
 
 Errand isn't finished. It still sometimes says it succeeded when it didn't, and no blind person has tested it yet. That comes next.
 
