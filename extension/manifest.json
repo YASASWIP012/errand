@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Errand: make this page readable",
+  "short_name": "Errand",
+  "version": "0.1.0",
+  "description": "Names the buttons, links and images your screen reader can't, using what's on screen.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_title": "Errand", "default_popup": "popup.html" },
+  "commands": {
+    "label-page": {
+      "suggested_key": { "default": "Alt+Shift+L" },
+      "description": "Make this page readable"
+    }
+  },
+  "options_page": "popup.html"
+}

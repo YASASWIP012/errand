@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en" data-site="northgrid">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northgrid Power | My account</title>
+<style>
+  body { margin: 0; font: 15px/1.45 "Segoe UI", system-ui, sans-serif; background: #eef2f5; color: #1d2733; }
+  header { background: #0b3d5c; color: #fff; display: flex; align-items: center; gap: 24px; padding: 10px 28px; }
+  nav { display: flex; gap: 6px; margin-left: auto; }
+  .navbtn { width: 42px; height: 42px; border-radius: 8px; display: grid; place-items: center; color: #cfe7f5; }
+  .navbtn:hover, .navbtn.on { background: #135a85; color: #fff; }
+  main { max-width: 860px; margin: 28px auto; padding: 0 20px; }
+  .card { background: #fff; border-radius: 10px; padding: 22px 26px; margin-bottom: 18px; box-shadow: 0 1px 3px #0002; }
+  .muted { color: #6b7785; font-size: 13px; }
+  .cta { display: inline-flex; align-items: center; gap: 8px; background: #f2a900; border-radius: 6px; padding: 8px 14px; }
+  .opt { border: 2px solid #d5dde5; border-radius: 8px; padding: 12px 14px; margin: 8px 0; display: flex; gap: 10px; align-items: center; }
+  .opt.sel { border-color: #0b3d5c; background: #f0f7fb; }
+  .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #0b3d5c; }
+  .opt.sel .dot { background: #0b3d5c; box-shadow: inset 0 0 0 3px #fff; }
+  .toggle { width: 44px; height: 24px; border-radius: 12px; background: #c3ccd5; position: relative; }
+  .toggle::after { content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: left .15s; }
+  .toggle.on { background: #1f8a4c; } .toggle.on::after { left: 23px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #edf0f3; }
+  input, select { font: inherit; padding: 8px 10px; border: 1px solid #b9c4cf; border-radius: 6px; width: 260px; }
+  .fl { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #6b7785; margin: 14px 0 4px; }
+  .iconbtn { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #0b3d5c; color: #fff; }
+  .ok { background: #e7f6ec; border-left: 4px solid #1f8a4c; }
+</style>
+</head>
+<body>
+<header>
+  <span id="logo"></span>
+  <nav id="nav"></nav>
+</header>
+<main id="main"></main>
+<script src="../common.js"></script>
+<script>
+const { el, icon, textImage, clickable, act, state } = fx;
+const logo = document.getElementById("logo");
+logo.append(textImage("NORTHGRID POWER", { size: 18, weight: 800, color: "#fff", font: "Georgia, serif" }));
+
+const routes = { home: ICONS.home, bill: ICONS.bill, outage: ICONS.bolt, settings: ICONS.gear };
+const nav = document.getElementById("nav");
+for (const [r, path] of Object.entries(routes)) {
+  const d = el("div", { class: "navbtn", "data-route": r });
+  d.append(icon(path));
+  clickable(d, () => { location.hash = r; });
+  nav.append(d);
+}
+
+const money = (n) => `$${n.toFixed(2)}`;
+let payChoice = "full";
+
+async function render() {
+  const route = location.hash.slice(1) || "home";
+  for (const n of nav.children) n.classList.toggle("on", n.dataset.route === route.split("/")[0]);
+  const st = await state();
+  const main = document.getElementById("main");
+  main.replaceChildren();
+  const card = (...k) => main.appendChild(el("div", { class: "card" }, ...k));
+
+  if (route === "home") {
+    card(el("h1", { style: "margin:0 0 4px;font-size:22px" }, "Welcome back"), el("div", { class: "muted" }, `Account ${st.account} · 41 Alder Row`));
+    const due = el("div", { style: "display:flex;align-items:center;justify-content:space-between;gap:20px" });
+    const left = el("div", {}, el("div", { class: "muted" }, "Amount due"));
+    left.append(textImage(money(st.balance), { size: 34, weight: 700, color: "#0b3d5c" }));
+    left.append(el("div", { class: "muted" }, st.balance > 0 ? `Due by ${st.dueDate}` : "Nothing due. Thank you!"));
+    due.append(left);
+    if (st.balance > 0) {
+      const pay = el("div", { class: "cta" });
+      pay.append(icon(ICONS.bill, 18, "#1d2733"), textImage("Pay now", { size: 15, weight: 700 }));
+      clickable(pay, () => { location.hash = "pay"; });
+      due.append(pay);
+    }
+    card(due);
+    card(el("h2", { style: "font-size:16px;margin:0 0 8px" }, "Recent usage"), el("div", { class: "muted" }, "October: 412 kWh, 6% lower than September."));
+  }
+
+  if (route === "bill") {
+    const c = card(el("h1", { style: "font-size:20px;margin:0 0 10px" }, "Billing history"));
+    const rows = [["Sep 2026", 91.4], ["Aug 2026", 103.75], ["Jul 2026", 97.1]];
+    for (const p of st.payments) rows.unshift([`Payment ${p.ref}`, -p.amount]);
+    for (const [label, amt] of rows) {
+      const r = el("div", { class: "row" }, el("span", {}, label));
+      r.append(textImage(amt < 0 ? `-${money(-amt)}` : money(amt), { size: 14 }));
+      c.append(r);
+    }
+  }
+
+  if (route === "pay") {
+    const c = card(el("h1", { style: "font-size:20px;margin:0 0 6px" }, "Make a payment"), el("div", { class: "muted" }, "Choose how much to pay"));
+    const opts = [["full", `Full balance`], ["other", "Other amount"]];
+    const other = el("input", { inputmode: "decimal", id: "amt", style: "margin-left:26px" });
+    for (const [v, label] of opts) {
+      const o = el("div", { class: "opt" + (payChoice === v ? " sel" : "") }, el("span", { class: "dot" }));
+      o.append(textImage(v === "full" ? `${label} ${money(st.balance)}` : label, { size: 15, weight: 500 }));
+      clickable(o, () => { payChoice = v; render(); });
+      c.append(o);
+    }
+    if (payChoice === "other") c.append(other);
+    const next = el("div", { class: "iconbtn", style: "margin-top:16px" });
+    next.append(icon(ICONS.arrow));
+    clickable(next, () => {
+      const amount = payChoice === "full" ? st.balance : Number(document.getElementById("amt")?.value);
+      if (!(amount > 0)) { alert("Enter an amount"); return; }
+      sessionStorage.setItem("ng-amount", String(amount));
+      location.hash = "review";
+    });
+    c.append(next);
+  }
+
+  if (route === "review") {
+    const amount = Number(sessionStorage.getItem("ng-amount"));
+    const c = card(el("h1", { style: "font-size:20px;margin:0 0 6px" }, "Review payment"));
+    c.append(el("div", { class: "row" }, el("span", {}, "Pay from"), el("span", {}, "Visa ending 4471")));
+    const r = el("div", { class: "row" }, el("span", {}, "Amount"));
+    r.append(textImage(money(amount), { size: 15, weight: 700 }));
+    c.append(r);
+    const confirm = el("div", { class: "cta", style: "margin-top:16px" });
+    confirm.append(textImage("Confirm payment", { size: 15, weight: 700 }));
+    clickable(confirm, async () => {
+      const res = await act({ type: "pay", amount });
+      sessionStorage.setItem("ng-ref", res.result);
+      location.hash = "done";
+    });
+    c.append(confirm);
+  }
+
+  if (route === "done") {
+    main.appendChild(el("div", { class: "card ok" }, el("h1", { style: "font-size:20px;margin:0" }, "Payment received"),
+      el("p", {}, `Reference ${sessionStorage.getItem("ng-ref")}. Remaining balance ${money(st.balance)}.`)));
+  }
+
+  if (route === "settings") {
+    const c = card(el("h1", { style: "font-size:20px;margin:0 0 6px" }, "Preferences"));
+    for (const [key, label, hint] of [["paperless", "Paperless billing", "Get bills by email instead of post"], ["autopay", "Automatic payments", "Pay the full balance on the due date"]]) {
+      const t = el("div", { class: "toggle" + (st[key] ? " on" : "") });
+      clickable(t, async () => { await act({ type: key, on: !st[key] }); render(); });
+      c.append(el("div", { class: "row" }, el("div", {}, el("div", {}, label), el("div", { class: "muted" }, hint)), t));
+    }
+  }
+
+  if (route === "outage") {
+    const c = card(el("h1", { style: "font-size:20px;margin:0 0 6px" }, "Report a problem"));
+    c.append(el("div", { class: "fl" }, "Address"));
+    const addr = el("input", { value: "41 Alder Row" });
+    c.append(addr, el("div", { class: "fl" }, "What's happening?"));
+    const kind = el("select", {}, ...["Choose one", "No power", "Flickering lights", "Downed line", "Streetlight out"].map((t) => el("option", {}, t)));
+    c.append(kind);
+    const send = el("div", { class: "iconbtn", style: "margin-top:18px" });
+    send.append(icon(ICONS.arrow));
+    clickable(send, async () => {
+      if (kind.selectedIndex === 0) { alert("Choose what is happening"); return; }
+      const res = await act({ type: "outage", address: addr.value, kind: kind.value });
+      c.replaceChildren(el("h1", { style: "font-size:20px;margin:0" }, "Report sent"), el("p", {}, `Reference ${res.result}. A crew will be assigned.`));
+    });
+    c.append(send);
+    for (const o of st.outages) c.append(el("p", { class: "muted" }, `Open report ${o.ref}: ${o.kind}`));
+  }
+}
+addEventListener("hashchange", render);
+render();
+</script>
+</body>
+</html>

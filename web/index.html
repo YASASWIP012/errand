@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errand</title>
+<meta name="description" content="Errand makes inaccessible websites usable by voice for blind and low-vision people.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ff5a1f'/%3E%3Cpath d='M9 17l5 5 9-12' stroke='%23fff' stroke-width='3.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<a class="skip" href="#talk">Skip to the voice control</a>
+<header class="masthead">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="wordmark">Errand</span>
+  </div>
+  <p class="tagline">Websites that ignore screen readers, made usable by voice.</p>
+  <nav class="tools" aria-label="Settings">
+    <label class="switch"><input type="checkbox" id="voiceOut" checked> Speak replies aloud</label>
+    <button class="ghost" id="forgetBtn" type="button">Forget me</button>
+  </nav>
+</header>
+
+<main id="app">
+  <section class="left" aria-label="Talk to Errand">
+    <div class="sites" role="group" aria-labelledby="sitesLabel">
+      <h2 id="sitesLabel" class="eyebrow">1. Open a test site</h2>
+      <div id="siteList" class="sitelist"></div>
+    </div>
+
+    <div class="quick" role="group" aria-labelledby="quickLabel">
+      <h2 id="quickLabel" class="eyebrow">2. Ask for something</h2>
+      <div id="suggestions" class="suggestions"></div>
+    </div>
+
+    <div class="talk" id="talk">
+      <button id="micBtn" class="mic" type="button" aria-describedby="micHint">
+        <span class="mic-dot" aria-hidden="true"></span>
+        <span id="micLabel">Hold to talk</span>
+      </button>
+      <p id="micHint" class="hint">Hold the button or the Space bar and speak. You can also type below.</p>
+      <form id="goalForm" class="goalform">
+        <label for="goalInput" class="visually-hidden">What should Errand do?</label>
+        <input id="goalInput" autocomplete="off" placeholder="e.g. pay my electricity bill in full">
+        <button type="submit" class="go">Go</button>
+      </form>
+      <div class="row-actions">
+        <button id="labelBtn" type="button" class="secondary">Make this page readable</button>
+        <button id="stopBtn" type="button" class="secondary danger">Stop</button>
+        <label class="switch small"><input type="checkbox" id="baseline"> Compare: screen reader only</label>
+      </div>
+    </div>
+
+    <div id="askBox" class="ask" hidden role="alertdialog" aria-labelledby="askText" aria-modal="false">
+      <p id="askText"></p>
+      <div id="askConfirm" class="ask-buttons">
+        <button id="yesBtn" type="button" class="yes">Yes, go ahead</button>
+        <button id="noBtn" type="button" class="no">No</button>
+      </div>
+      <form id="askAnswer" class="goalform" hidden>
+        <label for="answerInput" class="visually-hidden">Your answer</label>
+        <input id="answerInput" autocomplete="off">
+        <button type="submit" class="go">Answer</button>
+      </form>
+      <form id="secureForm" class="goalform secure" hidden>
+        <label for="secureInput">Secure box. Goes to the page, never to the AI.</label>
+        <input id="secureInput" type="password" autocomplete="off">
+        <button type="submit" class="go">Type it</button>
+        <button type="button" id="handoffDone" class="secondary">I'm done, carry on</button>
+      </form>
+    </div>
+
+    <section class="log" aria-labelledby="logLabel">
+      <h2 id="logLabel" class="eyebrow">What Errand said</h2>
+      <ol id="log" class="loglist" aria-live="polite" aria-relevant="additions"></ol>
+    </section>
+  </section>
+
+  <section class="right" aria-label="The website">
+    <div class="viewport">
+      <div class="urlbar"><span class="lock" aria-hidden="true"></span><span id="url">No site open</span></div>
+      <img id="screen" alt="Live view of the website Errand is using" width="1180" height="760">
+      <div id="empty" class="empty">
+        <p>Pick a test site on the left. Each one reproduces failures that WebAIM finds on most of the web's top million home pages: buttons with no name, text drawn into images, clickable boxes a keyboard can't reach.</p>
+      </div>
+    </div>
+
+    <div class="panels">
+      <div class="tabs" role="tablist" aria-label="Details">
+        <button role="tab" id="tab-hear" aria-selected="true" aria-controls="panel-hear" type="button">What a screen reader hears</button>
+        <button role="tab" id="tab-trace" aria-selected="false" aria-controls="panel-trace" type="button" tabindex="-1">Which model did what</button>
+      </div>
+      <div role="tabpanel" id="panel-hear" aria-labelledby="tab-hear">
+        <div class="hear">
+          <div class="hear-col">
+            <div class="hear-head"><h3>Before</h3><button type="button" class="play" id="playBefore">Play</button></div>
+            <ol id="beforeList" class="controls"></ol>
+          </div>
+          <div class="hear-col">
+            <div class="hear-head"><h3>After Errand</h3><button type="button" class="play" id="playAfter">Play</button></div>
+            <ol id="afterList" class="controls"></ol>
+          </div>
+        </div>
+        <p id="hearSummary" class="summary"></p>
+      </div>
+      <div role="tabpanel" id="panel-trace" aria-labelledby="tab-trace" hidden>
+        <div id="lanes" class="lanes"></div>
+        <table class="trace">
+          <caption class="visually-hidden">Every model call in this session</caption>
+          <thead><tr><th scope="col">Model</th><th scope="col">Job</th><th scope="col">Time</th><th scope="col">Tokens</th><th scope="col">Cost</th></tr></thead>
+          <tbody id="traceRows"></tbody>
+          <tfoot><tr><th scope="row" colspan="2">Session total</th><td id="tTime">0 s</td><td id="tTok">0</td><td id="tCost">$0.0000</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="intro" aria-labelledby="introTitle">
+  <h2 id="introTitle">What Errand does</h2>
+  <ol>
+    <li>It finds the buttons and images your screen reader can't name and names them from what's on screen.</li>
+    <li>Say "pay my bill" and it works through the site, telling you what it sees.</li>
+    <li>It stops before paying, sending or deleting, and it never types passwords or card numbers.</li>
+  </ol>
+  <p>This demo runs on four made-up websites, so nothing real is paid or booked.</p>
+  <form method="dialog"><button class="go" autofocus>Start</button></form>
+</dialog>
+
+<script src="app.js" type="module"></script>
+</body>
+</html>

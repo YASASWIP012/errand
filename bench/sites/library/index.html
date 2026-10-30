@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" data-site="library">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maple County Library - My Account</title>
+<style>
+  body { margin: 0; font: 15px/1.5 Verdana, Geneva, sans-serif; background: #f4f1ec; color: #2b2b2b; }
+  .bar { background: #8b2f2f; color: #fff; padding: 12px 30px; display: flex; align-items: center; gap: 20px; }
+  .search { margin-left: auto; display: flex; background: #fff; border-radius: 4px; overflow: hidden; }
+  .search input { border: 0; padding: 8px 10px; width: 240px; font: inherit; }
+  .sbtn { width: 38px; display: grid; place-items: center; color: #8b2f2f; }
+  .wrap { max-width: 880px; margin: 24px auto; padding: 0 20px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; }
+  td, th { padding: 12px; border-bottom: 1px solid #e6e1d8; text-align: left; }
+  th { background: #efe9df; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  .chk { width: 18px; height: 18px; border: 2px solid #8b2f2f; border-radius: 3px; }
+  .chk.on { background: #8b2f2f; }
+  .ib { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 4px; color: #8b2f2f; }
+  .ib:hover { background: #f4e3e3; }
+  .msg { padding: 10px 14px; margin: 12px 0; background: #e8f3e8; border-left: 4px solid #3a7a3a; }
+  .err { background: #fbeaea; border-color: #a33; }
+  .result { background: #fff; padding: 14px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; }
+  .actions { margin: 10px 0; display: flex; gap: 10px; align-items: center; }
+</style>
+</head>
+<body>
+<div class="bar"><span id="logo"></span>
+  <div class="search"><input id="q"><div class="sbtn" id="go"></div></div>
+</div>
+<div class="wrap" id="main"></div>
+<script src="../common.js"></script>
+<script>
+const { el, icon, textImage, clickable, act, state } = fx;
+document.getElementById("logo").append(textImage("Maple County Library", { size: 19, weight: 700, color: "#fff", font: "Verdana, sans-serif" }));
+const go = document.getElementById("go");
+go.append(icon(ICONS.search, 18));
+const CATALOG = ["Piranesi", "The Overstory", "Braiding Sweetgrass", "Tomorrow, and Tomorrow, and Tomorrow", "The Ministry for the Future", "Klara and the Sun", "Project Hail Mary"];
+let view = "loans", query = "", message = null, selected = new Set();
+clickable(go, () => { query = document.getElementById("q").value.trim(); view = "search"; render(); });
+
+async function render() {
+  const st = await state();
+  const main = document.getElementById("main");
+  main.replaceChildren();
+  if (message) main.append(el("div", { class: "msg" + (message.err ? " err" : "") }, message.text));
+  message = null;
+
+  if (view === "loans") {
+    main.append(el("h1", { style: "font-size:20px" }, "Items checked out"));
+    const actions = el("div", { class: "actions" });
+    const renewSel = clickable(el("div", { class: "ib", title: "" }, icon(ICONS.renew, 18)), async () => {
+      if (!selected.size) { message = { text: "Select items first.", err: true }; return render(); }
+      const out = [];
+      for (const id of selected) { const r = await act({ type: "renew", id }); out.push(r.result ? `${st.loans.find((l) => l.id === id).title}: ${r.result}` : `${st.loans.find((l) => l.id === id).title} renewed`); }
+      selected.clear(); message = { text: out.join(". ") + "." }; render();
+    });
+    actions.append(renewSel, el("span", { style: "font-size:13px;color:#777" }, "Selected items"));
+    main.append(actions);
+    const t = el("table", {}, el("tr", {}, el("th", {}, ""), el("th", {}, "Title"), el("th", {}, "Due"), el("th", {}, "Renewals"), el("th", {}, "")));
+    for (const l of st.loans) {
+      const chk = clickable(el("div", { class: "chk" + (selected.has(l.id) ? " on" : "") }), () => { selected.has(l.id) ? selected.delete(l.id) : selected.add(l.id); render(); });
+      const one = clickable(el("div", { class: "ib" }, icon(ICONS.renew, 18)), async () => {
+        const r = await act({ type: "renew", id: l.id });
+        message = r.result ? { text: `Could not renew ${l.title}: ${r.result}.`, err: true } : { text: `${l.title} renewed. New due date 21 Nov.` };
+        render();
+      });
+      const due = el("td", {}); due.append(textImage(l.due, { size: 14, weight: 400 }));
+      t.append(el("tr", {}, el("td", {}, chk), el("td", {}, l.title), due, el("td", {}, `${l.renewals} of 2`), el("td", {}, one)));
+    }
+    main.append(t);
+    if (st.holds.length) main.append(el("h2", { style: "font-size:17px;margin-top:26px" }, "Holds"), el("ul", {}, ...st.holds.map((h) => el("li", {}, h))));
+  }
+
+  if (view === "search") {
+    main.append(el("div", { style: "margin-bottom:10px" }, clickable(el("span", { style: "color:#8b2f2f;text-decoration:underline" }, "« My account"), () => { view = "loans"; render(); })));
+    main.append(el("h1", { style: "font-size:20px" }, `Results for "${query}"`));
+    const hits = CATALOG.filter((c) => c.toLowerCase().includes(query.toLowerCase()));
+    if (!hits.length) main.append(el("p", {}, "No results."));
+    for (const h of hits) {
+      const hold = clickable(el("div", { class: "ib" }, icon(ICONS.bookmark, 18)), async () => {
+        await act({ type: "hold", title: h }); message = { text: `Hold placed on ${h}. We'll email you when it's ready.` }; view = "loans"; render();
+      });
+      main.append(el("div", { class: "result" }, el("div", {}, el("strong", {}, h), el("div", { style: "font-size:12px;color:#777" }, "Book · 1 copy available")), hold));
+    }
+  }
+}
+render();
+</script>
+</body>
+</html>
