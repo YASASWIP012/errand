@@ -4,7 +4,7 @@ Errand is a voice-driven browser agent for blind people. Much of the web still f
 
 Live demo: https://errand-gix3.onrender.com (the free host sleeps when idle, so the first visit can take about a minute)
 
-Video: VIDEO_URL
+Video: https://youtu.be/dxjiAzTB65M
 
 ## Results
 

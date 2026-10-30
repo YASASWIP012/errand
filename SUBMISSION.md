@@ -48,7 +48,7 @@ Repo: https://github.com/YASASWIP012/errand
 
 Demo: https://errand-gix3.onrender.com
 
-Video: VIDEO_URL
+Video: https://youtu.be/dxjiAzTB65M
 
 ## Feedback on Nebius Token Factory and NVIDIA models
 
