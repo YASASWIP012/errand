@@ -6,6 +6,10 @@ Live demo: https://errand-gix3.onrender.com (the free host sleeps when idle, so 
 
 Video: https://youtu.be/dxjiAzTB65M
 
+## Try it in three clicks
+
+Open the demo, press Start, then choose Corner Grocer. Press "Make this page readable" and compare the Before and After lists. Then type "Add two oat milks to my basket", or ask it to place an order and answer no when it stops to ask.
+
 ## Results
 
 The benchmark has 40 tasks on 4 fictional sites: a power company, a clinic, a library and a grocer. A task passes only if the site's server state matches the goal, so an agent's claim of success counts for nothing. The baseline uses the same models, stop rules and guard, without page repair or memory. This is the run in [bench/results/final.md](bench/results/final.md):
