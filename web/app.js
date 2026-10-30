@@ -6,8 +6,8 @@ const SUGGESTIONS = {
   library: ["Renew The Overstory", "Place a hold on Project Hail Mary"],
   grocer: ["Add two oat milks to my basket and place the order", "Remove the bananas from my basket"],
 };
-const ROLE_NAMES = { planner: "Nemotron 3 Ultra", actor: "Nemotron 3.5 Lightning", vision: "Nemotron 3.5 Super VL", guard: "Nemotron Content Safety" };
-const ROLE_JOBS = { planner: "plans the errand", actor: "picks each step", vision: "reads the pixels", guard: "screens the page" };
+const ROLE_NAMES = { planner: "Nemotron 3 Ultra", actor: "Nemotron 3.5 Super VL", vision: "Nemotron 3.5 Super VL", guard: "Nemotron 3.5 Lightning" };
+const ROLE_JOBS = { planner: "plans and checks", actor: "picks each step", vision: "reads the pixels", guard: "screens the page" };
 
 let ws;
 let currentSite = null;
