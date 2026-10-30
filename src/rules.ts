@@ -44,6 +44,8 @@ export interface RuleContext {
   pageText: string;
   confirmed: Set<string>;
   site: string;
+  // What a cropped second look found, for a control named from a picture.
+  secondLook?: { id: string; reads: string };
 }
 
 export function check(action: Action, ctx: RuleContext): Verdict {
@@ -58,6 +60,9 @@ export function check(action: Action, ctx: RuleContext): Verdict {
     const target = ctx.controls.find((c) => c.id === action.id);
     if (!target) return { decision: "block", reason: `no control numbered ${action.id} on this page` };
     if (action.kind === "type") {
+      if (target.tag !== "input" && target.tag !== "textarea") {
+        return { decision: "block", reason: `"${target.name}" is not a text box. Use the buttons beside it` };
+      }
       if (target.password || SECRET_FIELD.test(`${target.name} ${target.autocomplete ?? ""}`) || /^cc-/.test(target.autocomplete ?? "")) {
         return {
           decision: "handoff",
@@ -70,14 +75,15 @@ export function check(action: Action, ctx: RuleContext): Verdict {
     // A label read from pixels can be wrong, and a wrong name must not walk past
     // this check: on a page with money on it, only a clearly harmless name passes.
     const amount = money(ctx.pageText);
-    const unsure = !!target.labelled && !!amount && !SAFE_LABEL.test(target.name);
+    const looked = ctx.secondLook?.id === target.id;
+    const unsure = looked || (!!target.labelled && !!amount && !SAFE_LABEL.test(target.name));
     if (action.kind === "click" && (COMMIT_WORDS.test(target.name) || unsure)) {
       const key = `${ctx.site}|${target.id}|${target.name}`;
       if (ctx.confirmed.has(key)) return { decision: "allow" };
       return {
         decision: "confirm",
         reason: key,
-        prompt: `I'm about to press "${target.name}" on ${ctx.site}.${unsure && !COMMIT_WORDS.test(target.name) ? " I read that name from a picture, so it may be wrong." : ""}${amount ? ` The page shows ${amount}.` : ""} Should I go ahead? Say yes or no.`,
+        prompt: `I'm about to press "${target.name}" on ${ctx.site}.${looked && ctx.secondLook?.reads ? ` Up close it reads "${ctx.secondLook.reads}".` : unsure && !COMMIT_WORDS.test(target.name) ? " I read that name from a picture, so it may be wrong." : ""}${amount ? ` The page shows ${amount}.` : ""} Should I go ahead? Say yes or no.`,
       };
     }
   }

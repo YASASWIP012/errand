@@ -79,6 +79,28 @@ export async function labelControls(
     });
 }
 
+// A second look before a click: the control alone, cropped from the page, with
+// no neighbours to confuse the reading. Any failure counts as risky.
+export async function looksCommitting(crop: Buffer, name: string, sink?: TraceSink): Promise<{ commits: boolean; reads: string }> {
+  try {
+    const res = await call("vision", "second look before a click", {
+      temperature: 0,
+      max_tokens: 80,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: `This is one control cropped from a web page. It was labelled "${name}", which may be wrong. Read any words in it. Would pressing it pay, place an order, submit, send, book, delete or cancel something? Adding to a basket, changing a quantity, opening a page or viewing something does not count. Reply with only JSON: {"reads":"words in the image","commits":true or false}` },
+          { type: "image_url", image_url: { url: `data:image/jpeg;base64,${crop.toString("base64")}` } },
+        ],
+      }],
+    }, sink);
+    const out = parseJson<{ reads: string; commits: boolean }>(res.choices[0]?.message?.content);
+    return { commits: out.commits !== false, reads: String(out.reads ?? "") };
+  } catch {
+    return { commits: true, reads: "" };
+  }
+}
+
 // Low-confidence guesses are announced as guesses, so the user knows to check.
 function tidy(label: string, confidence: number): string {
   const clean = label.trim().replace(/\s+/g, " ").replace(/[."]+$/, "").slice(0, 80);

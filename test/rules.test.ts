@@ -19,6 +19,17 @@ function ctx(over: Partial<RuleContext> = {}): RuleContext {
 }
 
 describe("stop rules", () => {
+  it("refuses to type into something that is not a text box", () => {
+    const controls = [{ id: "9", tag: "div", role: "textbox", name: "Oat milk quantity" }];
+    expect(check({ kind: "type", id: "9", text: "2" }, ctx({ controls })).decision).toBe("block");
+  });
+
+  it("asks when the second look disagrees with a harmless label", () => {
+    const controls = [{ id: "9", tag: "div", role: "button", name: "View basket", labelled: true }];
+    const v = check({ kind: "click", id: "9" }, ctx({ controls, secondLook: { id: "9", reads: "Place order" } }));
+    expect(v.decision).toBe("confirm");
+  });
+
   it("does not trust a misread label on a page with money", () => {
     const controls = [{ id: "9", tag: "div", role: "button", name: "Your basket", labelled: true }];
     expect(check({ kind: "click", id: "9" }, ctx({ controls })).decision).toBe("confirm");

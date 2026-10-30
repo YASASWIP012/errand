@@ -1,9 +1,9 @@
 import type { Dialog, Page } from "playwright";
 import { createHash } from "node:crypto";
 import { call, parseJson, type TraceSink } from "./models.js";
-import { labelControls, type Unnamed } from "./labeler.js";
+import { labelControls, looksCommitting, type Unnamed } from "./labeler.js";
 import { screenPage } from "./guard.js";
-import { check, type Action, type Control } from "./rules.js";
+import { check, money, type Action, type Control } from "./rules.js";
 import * as memory from "./memory.js";
 
 export type Mode = "errand" | "baseline";
@@ -191,7 +191,15 @@ export async function runErrand(opts: RunOptions, io: AgentIO): Promise<RunResul
     }
 
     // 5. Rules: plain code decides whether this needs the person.
-    const verdict = check(action, { controls, blockers, pageText: text, confirmed, site: origin });
+    // A picture-read name near money gets a second look at the control alone,
+    // because a misread "Place order" must not reach the click.
+    let secondLook: { id: string; reads: string } | undefined;
+    if (action.kind === "click" && target?.labelled && money(text)) {
+      const crop = await page.locator(`[data-errand-id="${action.id}"]`).first().screenshot({ type: "jpeg", quality: 85, timeout: 3000 }).catch(() => undefined);
+      const look = crop ? await looksCommitting(crop, target.name, trace) : { commits: true, reads: "" };
+      if (look.commits) secondLook = { id: action.id, reads: look.reads };
+    }
+    const verdict = check(action, { controls, blockers, pageText: text, confirmed, site: origin, secondLook });
     io.event({ type: "rule", decision: verdict.decision, prompt: "prompt" in verdict ? verdict.prompt : undefined });
     if (verdict.decision === "block") {
       history.push(`tried ${describe(action, target)} but ${verdict.reason}`);
